@@ -154,6 +154,8 @@ public class Player : MonoBehaviour
         Thing thing = obj.AddComponent<Thing>();
 
         _objects.Add(thing);
+
+        FindClosestObject();
     }
 
     ///// <summary>
@@ -167,5 +169,7 @@ public class Player : MonoBehaviour
         Bot bot = obj.AddComponent<Bot>();
 
         _objects.Add(bot);
+
+        FindClosestObject();
     }
 }
