@@ -1,40 +1,37 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-[RequireComponent(typeof(Player))]
-public class AddObjects : MonoBehaviour
+public class ObjectsManager : MonoBehaviour
 {
     [SerializeField]
-    private Button _addNewThingButton;
+    private ObjectButton _thing;
 
     [SerializeField]
-    private Button _addNewBotButton;
+    private ObjectButton _bot;
 
     [SerializeField]
-    private Button _addNewHumanButton;
+    private ObjectButton _human;
 
-    [SerializeField]
-    private Transform _thingsParent;
-
-    [SerializeField]
-    private Transform _botsParent;
-
-    [SerializeField]
-    private Transform _humanParent;
-
-    // This will be used to add new Things at a random position within this range from the player.
+    // This will be used to add new objects at a random position within this range from the target.
     [SerializeField]
     private float _rangeFromPlayerToAdd = 20;
 
-    private Player _player;
+    private Transform _target;
+
+    // Use this to broadcast a new Object was found.
+    public static Action OnNewObjectAdded;
 
     public List<BaseObject> ObjectsList { get; private set; }
 
+    public void SetTargetToCreateObjectsNear(Transform target)
+    {
+        _target = target;
+    }
+
     private void Awake()
     {
-        _player = GetComponent<Player>();
-
         ObjectsList = new List<BaseObject>();
 
         InitializeButtons();
@@ -47,52 +44,24 @@ public class AddObjects : MonoBehaviour
         ResetButtons();
     }
 
+    /// <summary>
+    /// Initialize all buttons
+    /// </summary>
     private void InitializeButtons()
     {
-        if (_addNewThingButton != null)
-        {
-            _addNewThingButton.onClick.AddListener(AddThing);
-        }
-        else
-        {
-            Debug.LogWarning("No button has been assigned to add new Thing objects. Please assign it.");
-        }
-
-        if (_addNewBotButton != null)
-        {
-            _addNewBotButton.onClick.AddListener(AddBot);
-        }
-        else
-        {
-            Debug.LogWarning("No button has been assigned to add new Bot objects. Please assign it.");
-        }
-
-        if (_addNewHumanButton != null)
-        {
-            _addNewHumanButton.onClick.AddListener(AddHuman);
-        }
-        else
-        {
-            Debug.LogWarning("No button has been assigned to add new Human objects. Please assign it.");
-        }
+        _thing.AddButtonListener(AddThing);
+        _bot.AddButtonListener(AddBot);
+        _human.AddButtonListener(AddHuman);
     }
 
+    /// <summary>
+    /// Resets all buttons.
+    /// </summary>
     private void ResetButtons()
     {
-        if (_addNewThingButton != null)
-        {
-            _addNewThingButton.onClick.RemoveAllListeners();
-        }
-
-        if (_addNewBotButton != null)
-        {
-            _addNewBotButton.onClick.RemoveAllListeners();
-        }
-
-        if (_addNewHumanButton != null)
-        {
-            _addNewHumanButton.onClick.RemoveAllListeners();
-        }
+        _thing.RemoveListeners();
+        _bot.RemoveListeners();
+        _human.RemoveListeners();
     }
 
     /// <summary>
@@ -126,17 +95,24 @@ public class AddObjects : MonoBehaviour
     /// </summary>
     private void InitializeObjects()
     {
-        InitializeObjects<Thing>(_thingsParent);
-        InitializeObjects<Bot>(_botsParent);
-        InitializeObjects<Human>(_humanParent);
+        InitializeObjects<Thing>(_thing.ObjectParent);
+        InitializeObjects<Bot>(_bot.ObjectParent);
+        InitializeObjects<Human>(_human.ObjectParent);
     }
 
+    /// <summary>
+    /// Create a GameObject of a specific Primitive Type, and randomize the position within a specific range.
+    /// </summary>
+    /// <param name="type">The Primitive Type of object</param>
+    /// <returns>The GameObject created.</returns>
     private GameObject CreateObject(PrimitiveType type)
     {
         GameObject obj = GameObject.CreatePrimitive(type);
-        obj.transform.position = new Vector3(UnityEngine.Random.Range(transform.position.x - _rangeFromPlayerToAdd, transform.position.x + _rangeFromPlayerToAdd),
+        Vector3 pos = (_target == null) ? transform.position : _target.position;
+
+        obj.transform.position = new Vector3(UnityEngine.Random.Range(pos.x - _rangeFromPlayerToAdd, pos.x + _rangeFromPlayerToAdd),
                                              0,
-                                             UnityEngine.Random.Range(transform.position.z - _rangeFromPlayerToAdd, transform.position.z + _rangeFromPlayerToAdd));
+                                             UnityEngine.Random.Range(pos.z - _rangeFromPlayerToAdd, pos.z + _rangeFromPlayerToAdd));
 
         return obj;
     }
@@ -147,7 +123,7 @@ public class AddObjects : MonoBehaviour
     /// <typeparam name="T">The type of object, of type BaseObject.</typeparam>
     /// <param name="obj">The GameObject created to add the type of object to.</param>
     /// <param name="parent">The parent object to the type of object.</param>
-    public void AddObject<T>(GameObject obj, Transform parent) where T : BaseObject
+    private void AddObject<T>(GameObject obj, Transform parent) where T : BaseObject
     {
         T type = obj.gameObject.AddComponent<T>();
 
@@ -155,6 +131,8 @@ public class AddObjects : MonoBehaviour
         obj.name = typeof(T).ToString();
 
         ObjectsList.Add(type);
+
+        OnNewObjectAdded?.Invoke();
     }
 
     /// <summary>
@@ -163,9 +141,7 @@ public class AddObjects : MonoBehaviour
     private void AddThing()
     {
         GameObject obj = CreateObject(PrimitiveType.Cube);
-        AddObject<Thing>(obj, _thingsParent);
-
-        _player.OnNewObjectAdded();
+        AddObject<Thing>(obj, _thing.ObjectParent);
     }
 
     /// <summary>
@@ -174,9 +150,7 @@ public class AddObjects : MonoBehaviour
     private void AddBot()
     {
         GameObject obj = CreateObject(PrimitiveType.Capsule);
-        AddObject<Bot>(obj, _botsParent);
-
-        _player.OnNewObjectAdded();
+        AddObject<Bot>(obj, _bot.ObjectParent);
     }
 
     /// <summary>
@@ -185,8 +159,6 @@ public class AddObjects : MonoBehaviour
     private void AddHuman()
     {
         GameObject obj = CreateObject(PrimitiveType.Cylinder);
-        AddObject<Human>(obj, _humanParent);
-
-        _player.OnNewObjectAdded();
+        AddObject<Human>(obj, _human.ObjectParent);
     }
 }

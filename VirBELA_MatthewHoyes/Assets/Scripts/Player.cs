@@ -1,6 +1,5 @@
 ﻿using UnityEngine;
 
-[RequireComponent(typeof(AddObjects))]
 public class Player : MonoBehaviour
 {
     private Vector3 _previousPosition;
@@ -8,18 +7,26 @@ public class Player : MonoBehaviour
     private BaseObject _previousClosestObject;
     private BaseObject _closestObject;
 
-    private AddObjects _objectsManager;
+    [SerializeField]
+    private ObjectsManager _objectsManager;
 
     private void Awake()
     {
         _previousPosition = transform.position;
         _previousClosestObject = null;
 
-        _objectsManager = GetComponent<AddObjects>();
+        if (_objectsManager == null)
+        {
+            Debug.LogError("ObjectManager is not assigned in Player. Please assign.");
+        }
     }
 
     private void Start()
     {
+        ObjectsManager.OnNewObjectAdded += OnNewObjectAdded;
+
+        _objectsManager.SetTargetToCreateObjectsNear(transform);
+
         // Do it initially to find the first closest.
         FindClosestObject();
     }
@@ -31,6 +38,11 @@ public class Player : MonoBehaviour
         {
             OnPositionChanged();
         }
+    }
+
+    private void OnDestroy()
+    {
+        ObjectsManager.OnNewObjectAdded -= OnNewObjectAdded;
     }
 
     /// <summary>
@@ -49,6 +61,9 @@ public class Player : MonoBehaviour
     /// </summary>
     private void FindClosestObject()
     {
+        if (_objectsManager == null)
+            return;
+
         if (_objectsManager.ObjectsList != null || _objectsManager.ObjectsList.Count > 0)
         {
             float closest = Mathf.Infinity;
@@ -81,7 +96,7 @@ public class Player : MonoBehaviour
         }
     }
 
-    public void OnNewObjectAdded()
+    private void OnNewObjectAdded()
     {
         FindClosestObject();
     }
