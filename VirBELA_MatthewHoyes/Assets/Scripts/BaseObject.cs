@@ -7,11 +7,11 @@ public abstract class BaseObject : MonoBehaviour
 
     protected Color _originalColor;
 
+    public Vector3 Position { get { return transform.position; } }
+
     protected virtual void Awake()
     {
         _renderer = GetComponent<Renderer>();
-
-        Player.OnNewClosestFound += OnNewClosestFound;
 
         Initialize();
     }
@@ -31,7 +31,7 @@ public abstract class BaseObject : MonoBehaviour
     /// <summary>
     /// Resets the Renderer color back to its original color
     /// </summary>
-    protected virtual void Reset()
+    public virtual void Reset()
     {
         if (_renderer != null)
         {
@@ -40,44 +40,7 @@ public abstract class BaseObject : MonoBehaviour
     }
 
     /// <summary>
-    /// A callback method for when a new closest object is found.
-    /// </summary>
-    /// <param name="obj">The new closest object.</param>
-    protected virtual void OnNewClosestFound(BaseObject obj)
-    {
-        // Downcast this object to a BaseObject to valid if it's the same object
-        if ((BaseObject)this == obj)
-        {
-            // We are closest, select it.
-            Select();
-        }
-        else
-        {
-            // We are not closest, reset it.
-            Reset();
-        }
-    }
-
-    /// <summary>
-    /// Called before the destruction of this object is complete.
-    /// </summary>
-    //protected abstract void OnDestroy();
-    protected virtual void OnDestroy()
-    {
-        Player.OnNewClosestFound -= OnNewClosestFound;
-    }
-
-    /// <summary>
-    /// Gets the position of the object.
-    /// </summary>
-    /// <returns>The position of the object.</returns>
-    public Vector3 GetPosition()
-    {
-        return transform.position;
-    }
-
-    /// <summary>
     /// Select this object.
     /// </summary>
-    protected abstract void Select();
+    public abstract void Select();
 }

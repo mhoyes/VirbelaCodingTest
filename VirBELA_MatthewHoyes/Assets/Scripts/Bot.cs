@@ -8,7 +8,7 @@ public class Bot : BaseObject
     /// <summary>
     /// Select this "Bot" object and change its color to the selected color.
     /// </summary>
-    protected override void Select()
+    public override void Select()
     {
         if (_renderer != null)
         {

@@ -1,31 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
+[RequireComponent(typeof(AddObjects))]
 public class Player : MonoBehaviour
 {
-    [SerializeField]
-    private Transform _thingsParent;
-
-    [SerializeField]
-    private Transform _botsParent;
-
-    private List<BaseObject> _objects;
     private Vector3 _previousPosition;
 
     private BaseObject _previousClosestObject;
     private BaseObject _closestObject;
 
-    // Use this to broadcast a new Object was found.
-    public static Action<BaseObject> OnNewClosestFound;
+    private AddObjects _objectsManager;
 
     private void Awake()
     {
         _previousPosition = transform.position;
         _previousClosestObject = null;
-        _objects = new List<BaseObject>();
 
-        InitializeObjects();
+        _objectsManager = GetComponent<AddObjects>();
     }
 
     private void Start()
@@ -40,61 +30,6 @@ public class Player : MonoBehaviour
         if (transform.position != _previousPosition)
         {
             OnPositionChanged();
-        }
-    }
-
-    /// <summary>
-    /// Initialize any edit-time objects
-    /// </summary>
-    private void InitializeObjects()
-    {
-        InitializeThings();
-        InitializeBots();
-    }
-
-    /// <summary>
-    /// Initialize any edit-time "Thing" objects under "_thingsParent"
-    /// </summary>
-    private void InitializeThings()
-    {
-        if (_thingsParent != null)
-        {
-            foreach (Transform obj in _thingsParent)
-            {
-                Thing thing = obj.GetComponent<Thing>();
-
-                if (thing != null)
-                {
-                    _objects.Add(thing);
-                }
-            }
-        }
-        else
-        {
-            Debug.LogError("Unable to initialize any Thing objects. '_thingsParent' must be assigned.");
-        }
-    }
-
-    /// <summary>
-    /// Initialize any edit-time "Bot" objects under "_botsParent"
-    /// </summary>
-    private void InitializeBots()
-    {
-        if (_botsParent != null)
-        {
-            foreach (Transform obj in _botsParent)
-            {
-                Bot bot = obj.GetComponent<Bot>();
-
-                if (bot != null)
-                {
-                    _objects.Add(bot);
-                }
-            }
-        }
-        else
-        {
-            Debug.LogError("Unable to initialize any Bot objects. '_botsParent' must be assigned.");
         }
     }
 
@@ -114,14 +49,14 @@ public class Player : MonoBehaviour
     /// </summary>
     private void FindClosestObject()
     {
-        if (_objects != null || _objects.Count > 0)
+        if (_objectsManager.ObjectsList != null || _objectsManager.ObjectsList.Count > 0)
         {
             float closest = Mathf.Infinity;
             BaseObject closestObj = null;
 
-            foreach (BaseObject obj in _objects)
+            foreach (BaseObject obj in _objectsManager.ObjectsList)
             {
-                float distance = Vector3.Distance(transform.position, obj.GetPosition());
+                float distance = Vector3.Distance(transform.position, obj.Position);
 
                 if (distance < closest)
                 {
@@ -137,39 +72,17 @@ public class Player : MonoBehaviour
             // Ensure a new closest was found
             if (_closestObject != null && _closestObject != _previousClosestObject)
             {
-                // Check for null, and invoke if it exists
-                OnNewClosestFound?.Invoke(_closestObject);
+                // Ensure previous isn't null before resetting
+                _previousClosestObject?.Reset();
+
+                // Select the new closest
+                _closestObject.Select();
             }
         }
     }
 
-    ///// <summary>
-    ///// Add a new "Thing" object to the list.
-    ///// </summary>
-    public void AddThing(GameObject obj)
+    public void OnNewObjectAdded()
     {
-        obj.name = "Thing";
-        obj.transform.parent = _thingsParent;
-
-        Thing thing = obj.AddComponent<Thing>();
-
-        _objects.Add(thing);
-
-        FindClosestObject();
-    }
-
-    ///// <summary>
-    ///// Add a new "Bot" object to the list.
-    ///// </summary>
-    public void AddBot(GameObject obj)
-    {
-        obj.name = "Bot";
-        obj.transform.parent = _botsParent;
-
-        Bot bot = obj.AddComponent<Bot>();
-
-        _objects.Add(bot);
-
         FindClosestObject();
     }
 }
